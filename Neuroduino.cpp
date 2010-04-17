@@ -2,7 +2,7 @@
  *  Neuroduino.c
  *  
  *  Arduino Neural Network Library
- *  Simplified from:
+ *  Adapted & simplified from:
  *  http://www.neural-networks-at-your-fingertips.com/bpn.html
  *
  *  Implements a simple feedforward perceptron network
@@ -15,12 +15,15 @@
 #include "WProgram.h"
 #include "Neuroduino.h"
 
-Neuroduino::Neuroduino(int nodeArray[], int numLayers, double eta = 0.1, double theta = 0.0, boolean debug = false) {
+Neuroduino::Neuroduino(){ }
+
+void Neuroduino::init(int nodeArray[], int numLayers, double eta = 0.1, double theta = 0.0, boolean debug = false) {
 	// Constructor
 	_debug = debug;
 	trace("Neuroduino::Neuroduino\n");
 	
 	_numLayers = numLayers;
+	_output = (int*) calloc(nodeArray[_numLayers-1], sizeof(int));
 	
 	// allocate structs & initialize network
 	
@@ -30,6 +33,7 @@ Neuroduino::Neuroduino(int nodeArray[], int numLayers, double eta = 0.1, double 
 	
 	for (i=0; i < _numLayers; i++) {
 		// 2D array of the network's layers
+		//_output[i] = 0;
 		_net.Layer[i] = (LAYER*) malloc(sizeof(LAYER));
 		_net.Layer[i]->Units = nodeArray[i];		
 		_net.Layer[i]->Output = (int*) calloc(nodeArray[i], sizeof(int));
@@ -51,7 +55,6 @@ Neuroduino::Neuroduino(int nodeArray[], int numLayers, double eta = 0.1, double 
 	_net.Theta = theta;	// threshold
 	
 	randomizeWeights();
-	printNet();
 }
 
 /********* UTILITIES *********/
@@ -62,8 +65,11 @@ VAL Neuroduino::doubleToVal(double dValue) {
 }
 
 double Neuroduino::randomEqualDouble(double Low, double High) {
-	//trace("randomEqualDouble\n");
-	return ((double) rand() / RAND_MAX) * (High-Low) + Low;
+	trace("randomEqualDouble: ");
+	double ran = ((double) rand() / RAND_MAX) * (High-Low) + Low;
+	Serial.println(ran, 3);
+	return ran;
+	//return ((double) rand() / RAND_MAX) * (High-Low) + Low;
 }
 
 void Neuroduino::printNet(){
@@ -89,7 +95,7 @@ void Neuroduino::printNet(){
 				Serial.print(i,DEC);
 				Serial.print(":\t");
 				for (j=0; j<_net.Layer[l-1]->Units; j++) {
-					// cycle through units of previous layer
+					// cycle through units of "leftmost" layer
 					Serial.print(_net.Layer[l]->Weight[i][j], 3);
 					trace("\t");
 				}
@@ -134,26 +140,17 @@ void Neuroduino::setInput(int inputs[]){
 		_net.InputLayer->Output[i] = inputs[i];
 	}
 }
-/*
-void Neuroduino::getOutput(){
-	// copy output layer values to _output
-	int i;
-	for (i=0; i<_net.OutputLayer->Units; i++) {
-		_output[i] = _net.OutputLayer->Output[i];
-	}
-}
- */
 
-int Neuroduino::signThreshold(double sum){
-	Serial.print("signThreshold ");
-	Serial.print("Units: ");
-	Serial.println(_net.Layer[1]->Units);
+int* Neuroduino::getOutput(){
 	
+	return _output;
+	
+}
+
+int Neuroduino::signThreshold(double sum){	
 	if (sum >= _net.Theta) {
-		Serial.println("--> returning 1");
 		return 1;
 	} else {
-		Serial.println("--> returning -1");
 		return -1;
 	}
 }
@@ -162,22 +159,10 @@ double Neuroduino::weightedSum(int l, int node){
 	// calculates input activation for a particular neuron
 	int i;
 	double currentWeight, sum = 0.0;
-	//sum = 0.0;
-	
-	//Serial.print("weightedSum Units: ");
-	//Serial.println(_net.Layer[1]->Units);
 	
 	for (i=0; i<_net.Layer[l-1]->Units; i++) {
-		currentWeight = this->_net.Layer[l-1]->Weight[node][i];
-		Serial.print("wS cW: ");
-		Serial.print(currentWeight, 3);
-		Serial.print(" input: ");
-		Serial.println(_net.Layer[l-1]->Output[i]);
-		
+		currentWeight = _net.Layer[l]->Weight[node][i];		
 		sum += currentWeight * _net.Layer[l-1]->Output[i];
-		
-		//Serial.print("for loop Units: ");
-		//Serial.println(_net.Layer[1]->Units);
 	}
 	
 	return sum;
@@ -191,8 +176,6 @@ void Neuroduino::adjustWeights(int trainArray[]){
 	
 	for (l=1; l<_numLayers; l++) {
 		// cycle through each pair of nodes
-		Serial.print("adjustWeights: Layer[l]->Units: ");
-		Serial.println(_net.Layer[l]->Units);
 		for (i=0; i<_net.Layer[l]->Units; i++) {
 			// "rightmost" layer
 			// calculate current activation of this output node
@@ -206,7 +189,7 @@ void Neuroduino::adjustWeights(int trainArray[]){
 				in = _net.Layer[l-1]->Output[j];
 				
 				delta = _net.Eta * in * error;
-				_net.Layer[l]->Weight[j][i] += delta;
+				_net.Layer[l]->Weight[i][j] += delta;
 			}
 		}
 	}
@@ -216,36 +199,15 @@ void Neuroduino::simulateNetwork(){
 	/*****
 	 Calculate activations of each output node
 	 *****/
-	//Serial.println("simulateNetwork");
-	int num, l,j, activation;
+	int l,j;
 	
-	//Serial.print("simulateNetwork: Layer[1]->Units: ");
-	//Serial.println(_net.Layer[1]->Units);
-	num = _net.Layer[1]->Units;
-	Serial.print("simulateNetwork: num: ");
-	Serial.println(num);
-	//l = 1;
-	//for (l=_numLayers; l<=0; l--) {
-		//Serial.print("sim l: ");
-		//Serial.println(l);
+	for (l=_numLayers-1; l>0; l--) {
 		// step backwards through layers
 		// TODO: this will only work for _numLayers = 2!
-		for (j=0; j < num; j++) {
-			Serial.print("free mem: ");
-			Serial.print(get_free_memory());
-			Serial.print("  > j: ");
-			Serial.println(j);
-			//Serial.print(" / Units: ");
-			//Serial.println(_net.Layer[1]->Units);
-			// rightmost layer
-			//activation = signThreshold(weightedSum(l, j));
-			//Serial.print(activation, DEC);
-			//Serial.print(" ");
+		for (j=0; j < _net.Layer[l]->Units; j++) {
 			_output[j] = signThreshold(weightedSum(1, j));
 		}
-	//}
-	 
-	Serial.println("Exiting simulateNetwork");
+	}
 }
 
 /********* PUBLIC *********/
@@ -258,16 +220,14 @@ void Neuroduino::train(int inputArray[], int trainArray[]) {
 	
 }
 
-void Neuroduino::simulate(int inputArray[]) {
+int* Neuroduino::simulate(int inputArray[]) {
 	// introduce an input stimulus, simulate the network,
 	// and return an output array
 	trace("Neuroduino::simulate\n");
 	setInput(inputArray);
 	simulateNetwork();
-	
-	//getOutput();	// sets _output public array
-	
-	//return _output;
+		
+	return _output;
 }
 
 void Neuroduino::trace(char *message) {
