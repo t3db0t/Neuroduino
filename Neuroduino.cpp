@@ -101,6 +101,18 @@ void Neuroduino::printNet(){
 	}
 }
 
+// free memory check
+// from: http://forum.pololu.com/viewtopic.php?f=10&t=989#p4218
+int Neuroduino::get_free_memory(){
+	int free_memory;
+	if((int)__brkval == 0)
+		free_memory = ((int)&free_memory) - ((int)&__bss_end);
+	else
+		free_memory = ((int)&free_memory) - ((int)__brkval);
+	
+	return free_memory;
+}
+
 /********* PRIVATE *********/
 
 void Neuroduino::randomizeWeights() {
@@ -122,7 +134,7 @@ void Neuroduino::setInput(int inputs[]){
 		_net.InputLayer->Output[i] = inputs[i];
 	}
 }
-
+/*
 void Neuroduino::getOutput(){
 	// copy output layer values to _output
 	int i;
@@ -130,11 +142,18 @@ void Neuroduino::getOutput(){
 		_output[i] = _net.OutputLayer->Output[i];
 	}
 }
+ */
 
 int Neuroduino::signThreshold(double sum){
+	Serial.print("signThreshold ");
+	Serial.print("Units: ");
+	Serial.println(_net.Layer[1]->Units);
+	
 	if (sum >= _net.Theta) {
+		Serial.println("--> returning 1");
 		return 1;
 	} else {
+		Serial.println("--> returning -1");
 		return -1;
 	}
 }
@@ -143,10 +162,22 @@ double Neuroduino::weightedSum(int l, int node){
 	// calculates input activation for a particular neuron
 	int i;
 	double currentWeight, sum = 0.0;
+	//sum = 0.0;
+	
+	//Serial.print("weightedSum Units: ");
+	//Serial.println(_net.Layer[1]->Units);
 	
 	for (i=0; i<_net.Layer[l-1]->Units; i++) {
-		currentWeight = _net.Layer[l-1]->Weight[i][node];
+		currentWeight = this->_net.Layer[l-1]->Weight[node][i];
+		Serial.print("wS cW: ");
+		Serial.print(currentWeight, 3);
+		Serial.print(" input: ");
+		Serial.println(_net.Layer[l-1]->Output[i]);
+		
 		sum += currentWeight * _net.Layer[l-1]->Output[i];
+		
+		//Serial.print("for loop Units: ");
+		//Serial.println(_net.Layer[1]->Units);
 	}
 	
 	return sum;
@@ -160,8 +191,9 @@ void Neuroduino::adjustWeights(int trainArray[]){
 	
 	for (l=1; l<_numLayers; l++) {
 		// cycle through each pair of nodes
-		
-		for (i=0; i<_net.Layer[l]->Units; l++) {
+		Serial.print("adjustWeights: Layer[l]->Units: ");
+		Serial.println(_net.Layer[l]->Units);
+		for (i=0; i<_net.Layer[l]->Units; i++) {
 			// "rightmost" layer
 			// calculate current activation of this output node
 			activation = signThreshold(weightedSum(l,i));
@@ -184,39 +216,58 @@ void Neuroduino::simulateNetwork(){
 	/*****
 	 Calculate activations of each output node
 	 *****/
+	//Serial.println("simulateNetwork");
+	int num, l,j, activation;
 	
-	for (l=_numLayers-1; l<=0; l--) {
+	//Serial.print("simulateNetwork: Layer[1]->Units: ");
+	//Serial.println(_net.Layer[1]->Units);
+	num = _net.Layer[1]->Units;
+	Serial.print("simulateNetwork: num: ");
+	Serial.println(num);
+	//l = 1;
+	//for (l=_numLayers; l<=0; l--) {
+		//Serial.print("sim l: ");
+		//Serial.println(l);
 		// step backwards through layers
 		// TODO: this will only work for _numLayers = 2!
-		for (j=0; j<_net.Layer[l]->Units; j++) {
+		for (j=0; j < num; j++) {
+			Serial.print("free mem: ");
+			Serial.print(get_free_memory());
+			Serial.print("  > j: ");
+			Serial.println(j);
+			//Serial.print(" / Units: ");
+			//Serial.println(_net.Layer[1]->Units);
 			// rightmost layer
-			activation = signThreshold(weightedSum(l, j));
+			//activation = signThreshold(weightedSum(l, j));
+			//Serial.print(activation, DEC);
+			//Serial.print(" ");
+			_output[j] = signThreshold(weightedSum(1, j));
 		}
-	}
+	//}
 	 
-	
+	Serial.println("Exiting simulateNetwork");
 }
 
 /********* PUBLIC *********/
 
 void Neuroduino::train(int inputArray[], int trainArray[]) {
-	trace("Neuroduino::train");
+	trace("Neuroduino::train\n");
 	
 	setInput(inputArray);
 	adjustWeights(trainArray);
 	
 }
 
-boolean* Neuroduino::simulate(int inputArray[]) {
+void Neuroduino::simulate(int inputArray[]) {
 	// introduce an input stimulus, simulate the network,
 	// and return an output array
-	trace("Neuroduino::simulate");
+	trace("Neuroduino::simulate\n");
 	setInput(inputArray);
 	simulateNetwork();
 	
-	getOutput();	// sets _output public array
+	//getOutput();	// sets _output public array
 	
-	return *_output;
+	//return _output;
 }
 
 void Neuroduino::trace(char *message) {

@@ -18,8 +18,8 @@
 #include "WProgram.h"
 
 // used for get_free_memory()
-//extern int __bss_end;
-//extern void *__brkval;
+extern int __bss_end;
+extern void *__brkval;
 
 typedef double VAL;		// no idea why this has to go here
 
@@ -32,8 +32,8 @@ class Neuroduino
 		void printNet();
 		
 		// properties
-		boolean*	simulate(int inputArray[]);
-		boolean*	_output;
+		void	simulate(int inputArray[]);
+		int		_output[];
 	private:
 		// types
 		//typedef double VAL;	// this doesn't work here
@@ -60,15 +60,17 @@ class Neuroduino
 		// class methods
 		void	randomizeWeights();
 		void	setInput(int inputs[]);
-		void	getOutput();
+		//void	getOutput();
 		void	adjustWeights(int trainArray[]);
 		int		signThreshold(double sum);
 		double	weightedSum(int layer, int node);
+		void	simulateNetwork();
 	
 		// utility methods
 		void trace(char *message);
 		VAL doubleToVal(double dValue);
 		double randomEqualDouble(double Low, double High);
+		int get_free_memory();
 		
 		// properties
 		boolean		_debug;
