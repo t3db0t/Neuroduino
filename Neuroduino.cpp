@@ -15,12 +15,10 @@
 #include "WProgram.h"
 #include "Neuroduino.h"
 
-Neuroduino::Neuroduino(){ }
-
-void Neuroduino::init(int nodeArray[], int numLayers, double eta = 0.1, double theta = 0.0, boolean debug = false) {
+Neuroduino::Neuroduino(int nodeArray[], int numLayers, double eta = 0.1, double theta = 0.0, boolean debug = false) {
 	// Constructor
 	_debug = debug;
-	trace("Neuroduino::Neuroduino\n");
+	//trace("Neuroduino::Neuroduino\n");
 	
 	_numLayers = numLayers;
 	_output = (int*) calloc(nodeArray[_numLayers-1], sizeof(int));
@@ -54,7 +52,7 @@ void Neuroduino::init(int nodeArray[], int numLayers, double eta = 0.1, double t
 	_net.Eta = eta;		// learning rate
 	_net.Theta = theta;	// threshold
 	
-	randomizeWeights();
+	//randomizeWeights();
 }
 
 /********* UTILITIES *********/
@@ -65,11 +63,7 @@ VAL Neuroduino::doubleToVal(double dValue) {
 }
 
 double Neuroduino::randomEqualDouble(double Low, double High) {
-	trace("randomEqualDouble: ");
-	double ran = ((double) rand() / RAND_MAX) * (High-Low) + Low;
-	Serial.println(ran, 3);
-	return ran;
-	//return ((double) rand() / RAND_MAX) * (High-Low) + Low;
+	return ((double) rand() / RAND_MAX) * (High-Low) + Low;
 }
 
 void Neuroduino::printNet(){

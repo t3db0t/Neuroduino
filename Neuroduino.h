@@ -27,14 +27,15 @@ class Neuroduino
 {
 	public:
 		// methods
-		Neuroduino();
-		void	init(int nodeArray[], int numLayers, double eta, double theta, boolean debug);
+		Neuroduino(int nodeArray[], int numLayers, double eta, double theta, boolean debug);
 		void	train(int inputArray[], int trainArray[]);
 		void	printNet();
 		int*	getOutput();
+		void	randomizeWeights();
+		int*	simulate(int inputArray[]);
 		
 		// properties
-		int*	simulate(int inputArray[]);
+		
 		//int		_output[3];
 		
 	private:
@@ -61,7 +62,7 @@ class Neuroduino
 		} NET;
 	
 		// class methods
-		void	randomizeWeights();
+		
 		void	setInput(int inputs[]);
 		void	adjustWeights(int trainArray[]);
 		int		signThreshold(double sum);

@@ -1,20 +1,25 @@
 #include <Neuroduino.h>
 
 #define NUM_LAYERS 2
+#define ETA 0.01
+#define THETA 0.0
+#define DEBUG true
 
 // used for get_free_memory()
 extern int __bss_end;
 extern void *__brkval;
 
-int netArray[NUM_LAYERS] = {3,3};
-int inputArray[] = {1, -1, 1};
-int trainArray[] = {-1, 1, -1};
+int netArray[NUM_LAYERS] = {8,8};
+int inputArray[] = {1, -1, 1, -1, -1, 1, -1, 1};
+int trainArray[] = {-1, 1, -1, -1, 1, -1, 1, -1};
 
 int pinState;
 int lastRead = HIGH;
 
-//Neuroduino myNet(netArray, NUM_LAYERS, 0.05, 0.0, true);
-//Neuroduino myNet = Neuroduino();
+int netMem = get_free_memory();
+
+// Neuroduino params: (network array, number of layers, Eta, Theta, debug)
+Neuroduino myNet(netArray, NUM_LAYERS, ETA, THETA, DEBUG);
 
 // free memory check
 // from: http://forum.pololu.com/viewtopic.php?f=10&t=989#p4218
@@ -44,22 +49,16 @@ int checkMem(){
 }
 
 void setup(){
-  //Serial.begin(9600);
-  int seed = analogRead(0);
-  Serial.println(seed);
-  srand(seed);  // random seed
+  netMem = netMem - get_free_memory();
+  Serial.begin(9600);
+  srand(analogRead(0));
   //srand(4711);  // for testing
+  
+  myNet.randomizeWeights();
   
   pinMode(8, INPUT);
   digitalWrite(8, HIGH);
   
-  int netMem;
-  netMem = get_free_memory();
-  
-  // Neuroduino params: (network array, number of layers, Eta, Theta, debug)
-  myNet.init(netArray, NUM_LAYERS, 0.05, 0.0, true);
-  
-  netMem = netMem - get_free_memory();
   Serial.print("Net size: ");
   Serial.print(netMem);
   Serial.print(" / Free memory: ");
@@ -72,7 +71,7 @@ void setup(){
   
   // Test activation of random weights
   myNet.printNet();
-  printArray(myNet.simulate(inputArray), 3);    
+  printArray(myNet.simulate(inputArray), netArray[1]);    
 }
 
 void loop(){
@@ -83,7 +82,7 @@ void loop(){
     
     myNet.train(inputArray, trainArray);
     myNet.printNet();
-    printArray(myNet.simulate(inputArray), 3);
+    printArray(myNet.simulate(inputArray), netArray[1]);
   }
   lastRead = pinState;
 }
