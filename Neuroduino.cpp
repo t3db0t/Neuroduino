@@ -15,10 +15,12 @@
 #include "WProgram.h"
 #include "Neuroduino.h"
 
+Neuroduino::Neuroduino(){};
+
 Neuroduino::Neuroduino(int nodeArray[], int numLayers, double eta = 0.1, double theta = 0.0, boolean debug = false) {
 	// Constructor
 	_debug = debug;
-	//trace("Neuroduino::Neuroduino\n");
+	trace("Neuroduino::Neuroduino\n");
 	
 	_numLayers = numLayers;
 	_output = (int*) calloc(nodeArray[_numLayers-1], sizeof(int));
@@ -51,8 +53,6 @@ Neuroduino::Neuroduino(int nodeArray[], int numLayers, double eta = 0.1, double 
 	_net.OutputLayer = _net.Layer[_numLayers-1];
 	_net.Eta = eta;		// learning rate
 	_net.Theta = theta;	// threshold
-	
-	//randomizeWeights();
 }
 
 /********* UTILITIES *********/

@@ -27,6 +27,7 @@ class Neuroduino
 {
 	public:
 		// methods
+		Neuroduino();
 		Neuroduino(int nodeArray[], int numLayers, double eta, double theta, boolean debug);
 		void	train(int inputArray[], int trainArray[]);
 		void	printNet();
@@ -35,8 +36,6 @@ class Neuroduino
 		int*	simulate(int inputArray[]);
 		
 		// properties
-		
-		//int		_output[3];
 		
 	private:
 		// types
